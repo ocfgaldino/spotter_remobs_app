@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 
 
-
 import psycopg2 as pg
 
 
@@ -250,6 +249,8 @@ def get_last_values_spotter():
 		query = "SELECT * FROM spotter_status ORDER BY date_time DESC LIMIT 2"
 
 		df_status = pd.read_sql_query(query, conn)
+		
+		
 
 	return df_status
 
@@ -294,15 +295,14 @@ def get_last_values_spotter_general():
 
 		df_general = pd.read_sql_query(query, conn)
 		df_general = meters_to_knots(df_general)
+		
+		
 
 	return df_general
 
 df_general = get_last_values_spotter_general()
 
-
-
-
-
+df_general = df_general.fillna(value=np.nan)
 
 
 
@@ -538,6 +538,15 @@ big_n_2 = go.Figure()
 row_system = 1
 
 
+if len(df_status) == 2:
+  last_battery_v = df_status.battery_voltage.values[1]
+  last_solar_v = df_status.solar_voltage.values[1]
+
+elif len(df_status) == 1:
+  last_battery_v = np.nan
+  last_solar_v = np.nan
+
+
 
 
 
@@ -551,7 +560,7 @@ big_n_2.add_trace(go.Indicator(
                       'family': 'Times New Roman'},
               'suffix': ' V'},
     domain = {'row': row_system, 'column': col_1_pos},
-    delta = {'reference': df_status.battery_voltage.values[1], 'decreasing':{'color':'red'}},
+    delta = {'reference': last_battery_v, 'decreasing':{'color':'red'}},
                     )
                 )
 
@@ -564,7 +573,7 @@ big_n_2.add_trace(go.Indicator(
                       'family': 'Times New Roman'},
               'suffix': ' V'},
     domain = {'row': row_system, 'column': col_2_pos},
-    delta = {'reference': df_status.solar_voltage.values[1], 'decreasing':{'color':'red'}},
+    delta = {'reference': last_solar_v, 'decreasing':{'color':'red'}},
                     )
                 )
 
@@ -595,7 +604,7 @@ big_n_2.update_layout(
     template = {'data' : {'indicator': [{
     #    'title': {'text': "Bateria"},
         'mode' : "number+delta+gauge",
-        'delta' : {'reference': 12}}]
+        }]
                          }},
                          paper_bgcolor = '#111',
                          plot_bgcolor = '#111',
@@ -679,6 +688,8 @@ def get_waves_data(start_date, end_date):
                       password=os.environ['PASSWORD_QC'],
                       host=os.environ['HOST_QC'],
                       database=os.environ['DATABASE_QC']) as conn:
+                     
+                     
 
     query = """SELECT date_time, 
          lat as "Lat",
@@ -695,11 +706,12 @@ def get_waves_data(start_date, end_date):
          FROM data_buoys
              WHERE date_time >= '{}' and date_time <= '{}' and id_buoy = 3""".format(start_date, end_date)
 
-		
+   	
     df_waves = pd.read_sql_query(query, conn)
     df_waves['Date'] = [day.date() for day in df_waves['date_time']]
     df_waves['Hour'] = [day.time() for day in df_waves['date_time']]
 
+  	
 
   return df_waves
 
@@ -707,27 +719,29 @@ def get_waves_data(start_date, end_date):
 @st.cache(allow_output_mutation=True)
 def get_wind_data(start_date, end_date):
 
-	with pg.connect(user=os.environ['USER_QC'],
-                      password=os.environ['PASSWORD_QC'],
-                      host=os.environ['HOST_QC'],
-                      database=os.environ['DATABASE_QC']) as conn:
+  with pg.connect(user=os.environ['USER_QC'],
+		      password=os.environ['PASSWORD_QC'],
+		      host=os.environ['HOST_QC'],
+		      database=os.environ['DATABASE_QC']) as conn:
 
-		query = f"""SELECT date_time, \
-				 lat as "Lat", lon as "Lon", \
-				 TRUNC(wspd,2) as "Wspd", \
-				 wdir as "Wind_Dir" \
-				 FROM data_buoys \
-		         WHERE date_time >='{start_date}' and \
-		         date_time <= '{end_date}' \
-		         AND id_buoy = 3"""
+    query = f"""SELECT date_time, \
+		 lat as "Lat", lon as "Lon", \
+		TRUNC(wspd,2) as "Wspd", \
+		 wdir as "Wind_Dir" \
+		 FROM data_buoys \
+		WHERE date_time >='{start_date}' and \
+	       date_time <= '{end_date}' \
+	      AND id_buoy = 3"""
 
 		
-		df_wind = pd.read_sql_query(query, conn)
-		df_wind['Date'] = [day.date() for day in df_wind['date_time']]
-		df_wind['Hour'] = [day.time() for day in df_wind['date_time']]
-		df_wind = meters_to_knots(df_wind)
+    df_wind = pd.read_sql_query(query, conn)
+    df_wind['Date'] = [day.date() for day in df_wind['date_time']]
+    df_wind['Hour'] = [day.time() for day in df_wind['date_time']]
+    df_wind = meters_to_knots(df_wind)
 
-	return df_wind
+   	
+
+  return df_wind
 
 
 
@@ -786,7 +800,7 @@ if button_sql:
 
 
 	else:
-		st.markdown("### Sem dados de onda para o período selecionado.")
+		st.markdown("### Sem dados para o período selecionado.")
 
 
 
@@ -818,7 +832,6 @@ if button_sql:
 
 
 	st.markdown("---")
-
 
 
 
