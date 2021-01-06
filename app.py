@@ -290,7 +290,7 @@ def get_last_values_spotter_general():
 				 wdir as "Wdir"
 				 FROM data_buoys
 		         WHERE date_time = (SELECT max(date_time)
-		         FROM data_buoys where id_buoy = 3)"""
+		         FROM data_buoys where buoy_id = 3)"""
 
 
 		df_general = pd.read_sql_query(query, conn)
@@ -704,7 +704,7 @@ def get_waves_data(start_date, end_date):
          wspd as "Wspd",
          wdir as "Wdir"
          FROM data_buoys
-             WHERE date_time >= '{}' and date_time <= '{}' and id_buoy = 3""".format(start_date, end_date)
+             WHERE date_time >= '{}' and date_time <= '{}' and buoy_id = 3""".format(start_date, end_date)
 
    	
     df_waves = pd.read_sql_query(query, conn)
@@ -731,7 +731,7 @@ def get_wind_data(start_date, end_date):
 		 FROM data_buoys \
 		WHERE date_time >='{start_date}' and \
 	       date_time <= '{end_date}' \
-	      AND id_buoy = 3"""
+	      AND buoy_id = 3"""
 
 		
     df_wind = pd.read_sql_query(query, conn)
